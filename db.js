@@ -1,17 +1,28 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./database.sqlite');
+const mongoose = require('mongoose');
 
-// Create notifications table
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      message TEXT,
-      user_id INTEGER,
-      is_read BOOLEAN DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+// Define the schema for notifications
+const notificationSchema = new mongoose.Schema({
+  message: {
+    type: String,
+    required: true,
+  },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  is_read: {
+    type: Boolean,
+    default: false,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-module.exports = db;
+// Create the notification model
+const Notification = mongoose.model('Notification', notificationSchema);
+
+// Export the model
+module.exports = Notification;
