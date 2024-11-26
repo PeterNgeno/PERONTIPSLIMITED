@@ -1,26 +1,63 @@
-const { Sequelize, DataTypes } = require('sequelize');
-const sequelize = new Sequelize('sqlite:database.sqlite');
+const mongoose = require('mongoose');
 
-const User = sequelize.define('User', {
-  username: { type: DataTypes.STRING, allowNull: false },
-  password: { type: DataTypes.STRING, allowNull: false },
-  email: { type: DataTypes.STRING, allowNull: false },
-  sectionProgress: { type: DataTypes.JSON, defaultValue: {} }, // Tracks sections completed in the quiz
-  score: { type: DataTypes.INTEGER, defaultValue: 0 },  // Stores user's total score
-  paymentHistory: { type: DataTypes.JSON, defaultValue: [] },  // Store payments made by the user
-  lastPaymentDate: { type: DataTypes.DATE, allowNull: true }
+// Define the User Schema
+const UserSchema = new mongoose.Schema({
+  username: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  password: { 
+    type: String, 
+    required: true 
+  },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  sectionProgress: { 
+    type: Map, 
+    of: Number, 
+    default: {} 
+  }, // Tracks sections completed in the quiz
+  score: { 
+    type: Number, 
+    default: 0 
+  }, // Stores user's total score
+  paymentHistory: { 
+    type: Array, 
+    default: [] 
+  }, // Stores payments made by the user
+  lastPaymentDate: { 
+    type: Date, 
+    default: null 
+  }
 });
 
-// Example of creating a user or updating a user's progress
+// Create the User Model
+const User = mongoose.model('User', UserSchema);
+
+// Example of creating a user
 async function createUser(username, password, email) {
-  return await User.create({ username, password, email });
+  const newUser = new User({ username, password, email });
+  return await newUser.save();
 }
 
 // Example of updating user's quiz progress after they complete a section
 async function updateUserProgress(userId, section, score) {
-  const user = await User.findByPk(userId);
-  user.sectionProgress[section] = score;
-  await user.save();
+  const user = await User.findById(userId);
+  if (user) {
+    user.sectionProgress.set(section, score);
+    await user.save();
+    return user;
+  } else {
+    throw new Error('User not found');
+  }
 }
 
-module.exports = User;
+module.exports = {
+  User,
+  createUser,
+  updateUserProgress
+};
