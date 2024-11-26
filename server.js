@@ -13,7 +13,7 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect('mongodb+srv://peterkipsangngeno:Kipzz1945@atmymongodb.0qqao.mongodb.net/?retryWrites=true&w=majority&appName=AtmymongoDB',  {
+  .connect('mongodb+srv://peterkipsangngeno:Kipzz1945@atmymongodb.0qqao.mongodb.net/?retryWrites=true&w=majority&appName=AtmymongoDB', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
