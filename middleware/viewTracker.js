@@ -1,9 +1,14 @@
-const db = require('../db');
+const VisitorStats = require('../models/VisitorStats'); // Import the MongoDB model for VisitorStats
 
-module.exports = (req, res, next) => {
-  const sql = `INSERT INTO VisitorStats (path, visitedAt) VALUES (?, CURRENT_TIMESTAMP)`;
-  db.run(sql, [req.path], (err) => {
-    if (err) console.error(err.message);
-  });
+module.exports = async (req, res, next) => {
+  try {
+    // Insert a new visitor stat record
+    await VisitorStats.create({
+      path: req.path,
+      visitedAt: new Date(), // Use the current timestamp
+    });
+  } catch (err) {
+    console.error('Error logging visitor stats:', err.message);
+  }
   next();
 };
