@@ -1,31 +1,77 @@
-// Logic for handling quiz start, submission, and answer checking
-exports.startQuiz = (req, res) => {
-  const section = req.body.section;
-  const payment = req.body.payment;
-  const timer = getTimerDuration(payment);
+const Quiz = require('../models/Quiz');
+const User = require('../models/User');
 
-  res.json({ message: `Starting section ${section} with ${timer} seconds` });
-};
+// Start Quiz: Fetch the section's quiz and timer duration based on payment
+exports.startQuiz = async (req, res) => {
+  const { section, payment } = req.body;
 
-exports.submitQuiz = (req, res) => {
-  const answers = req.body.answers;
-  const section = req.body.section;
-  
-  const score = checkAnswers(answers);
-  
-  if (score === 10) {
-    res.json({ success: true, message: 'You passed! Proceed to next section.' });
-  } else {
-    res.json({ success: false, message: 'You failed. Please pay to retry.' });
+  try {
+    const timer = getTimerDuration(payment);
+
+    const quiz = await Quiz.findOne({ section });
+    if (!quiz) {
+      return res.status(404).json({ error: `No quiz found for section ${section}` });
+    }
+
+    res.json({
+      message: `Starting section ${section} with ${timer} seconds`,
+      quiz: quiz.questions,
+      timer,
+    });
+  } catch (error) {
+    console.error('Error starting quiz:', error);
+    res.status(500).json({ error: 'Failed to start quiz' });
   }
 };
 
-function checkAnswers(answers) {
-  const correctAnswers = ["Nairobi", "Blue Whale", "Python", "Mount Kenya", "5", "Eiffel Tower", "Ottoman Empire", "12", "Mars", "Julius Caesar"];
+// Submit Quiz: Validate answers and return the result
+exports.submitQuiz = async (req, res) => {
+  const { answers, section } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const quiz = await Quiz.findOne({ section });
+    if (!quiz) {
+      return res.status(404).json({ error: `No quiz found for section ${section}` });
+    }
+
+    const score = checkAnswers(answers, quiz.questions);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user's section progress and score
+    user.sectionProgress[section] = score;
+    user.score += score;
+    await user.save();
+
+    if (score === quiz.questions.length) {
+      res.json({
+        success: true,
+        message: 'You passed! Proceed to the next section.',
+        score,
+      });
+    } else {
+      res.json({
+        success: false,
+        message: 'You failed. Please pay to retry.',
+        score,
+      });
+    }
+  } catch (error) {
+    console.error('Error submitting quiz:', error);
+    res.status(500).json({ error: 'Failed to submit quiz' });
+  }
+};
+
+// Helper function to check answers against correct ones
+function checkAnswers(submittedAnswers, correctQuestions) {
   let score = 0;
-  
-  answers.forEach((answer, index) => {
-    if (answer.toLowerCase() === correctAnswers[index].toLowerCase()) {
+
+  submittedAnswers.forEach((answer, index) => {
+    if (answer.toLowerCase() === correctQuestions[index].correctAnswer.toLowerCase()) {
       score++;
     }
   });
@@ -33,12 +79,18 @@ function checkAnswers(answers) {
   return score;
 }
 
+// Helper function to determine timer duration based on payment
 function getTimerDuration(payment) {
   switch (payment) {
-    case '50': return 30;
-    case '100': return 45;
-    case '200': return 50;
-    case '400': return 65;
-    default: return 30;
+    case '50':
+      return 30;
+    case '100':
+      return 45;
+    case '200':
+      return 50;
+    case '400':
+      return 65;
+    default:
+      return 30;
   }
 }
