@@ -13,10 +13,13 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect('mongodb+srv://peterkipsangngeno:Kipzz19454@atmymongodb.0qqao.mongodb.net/?retryWrites=true&w=majority&appName=AtmymongoDB', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    'mongodb+srv://peterkipsangngeno:tryme1234@atmymongodb.0qqao.mongodb.net/?retryWrites=true&w=majority&appName=AtmymongoDB',
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
