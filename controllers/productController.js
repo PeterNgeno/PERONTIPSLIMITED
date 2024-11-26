@@ -1,62 +1,86 @@
-// Sample product data (replace with database logic in the future)
-let products = [
-    { id: 1, name: 'Product 1', price: 100 },
-    { id: 2, name: 'Product 2', price: 200 },
-];
+const Product = require('../models/Product'); // Assuming Product model is set up with MongoDB
 
 // Get all products
-const getProducts = (req, res) => {
+const getProducts = async (req, res) => {
+  try {
+    const products = await Product.find(); // Fetch all products from MongoDB
     res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Failed to fetch products' });
+  }
 };
 
 // Get product by ID
-const getProductById = (req, res) => {
-    const product = products.find(p => p.id === parseInt(req.params.id));
+const getProductById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const product = await Product.findById(id); // Find product by ID
     if (product) {
-        res.json(product);
+      res.json(product);
     } else {
-        res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Product not found' });
     }
+  } catch (error) {
+    console.error('Error fetching product by ID:', error);
+    res.status(500).json({ message: 'Failed to fetch product' });
+  }
 };
 
 // Create a new product
-const createProduct = (req, res) => {
-    const newProduct = {
-        id: products.length + 1,
-        name: req.body.name,
-        price: req.body.price,
-    };
-    products.push(newProduct);
+const createProduct = async (req, res) => {
+  const { name, price } = req.body;
+  try {
+    const newProduct = new Product({ name, price });
+    await newProduct.save(); // Save product to MongoDB
     res.status(201).json(newProduct);
+  } catch (error) {
+    console.error('Error creating product:', error);
+    res.status(500).json({ message: 'Failed to create product' });
+  }
 };
 
-// Update a product
-const updateProduct = (req, res) => {
-    const product = products.find(p => p.id === parseInt(req.params.id));
+// Update a product by ID
+const updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const { name, price } = req.body;
+  try {
+    const product = await Product.findById(id); // Find product by ID
     if (product) {
-        product.name = req.body.name || product.name;
-        product.price = req.body.price || product.price;
-        res.json(product);
+      product.name = name || product.name; // Update fields
+      product.price = price || product.price;
+      await product.save(); // Save updated product
+      res.json(product);
     } else {
-        res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Product not found' });
     }
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ message: 'Failed to update product' });
+  }
 };
 
-// Delete a product
-const deleteProduct = (req, res) => {
-    const productIndex = products.findIndex(p => p.id === parseInt(req.params.id));
-    if (productIndex !== -1) {
-        products.splice(productIndex, 1);
-        res.status(204).send();
+// Delete a product by ID
+const deleteProduct = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const product = await Product.findById(id); // Find product by ID
+    if (product) {
+      await product.remove(); // Delete product from MongoDB
+      res.status(204).send(); // No content response
     } else {
-        res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'Product not found' });
     }
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ message: 'Failed to delete product' });
+  }
 };
 
 module.exports = {
-    getProducts,
-    getProductById,
-    createProduct,
-    updateProduct,
-    deleteProduct,
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 };
