@@ -1,4 +1,4 @@
-const quiz = require('../models/Quiz');
+const Quiz = require('../models/Quiz');
 const User = require('../models/User');
 
 // Start Quiz: Fetch the section's quiz and timer duration based on payment
