@@ -1,5 +1,5 @@
 const Payment = require('../models/Payment');
-const mpesa = require('../paymentService'); // Assuming you have a helper for Mpesa STK push
+const mpesa = require('../models/Payment'); // Assuming you have a helper for Mpesa STK push
 
 exports.processPayment = async (req, res) => {
   const { userId, amount, section } = req.body;
