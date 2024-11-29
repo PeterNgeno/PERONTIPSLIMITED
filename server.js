@@ -40,6 +40,20 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to PeronTipsLimited API' });
 });
 
+// Quiz Route
+app.get('/quiz', (req, res) => {
+    res.json({ message: 'Quiz Section' });
+});
+
+// Betting Route
+app.get('/betting', (req, res) => {
+    res.json({ message: 'Welcome to the Betting Section' });
+});
+
+// Products Route
+app.get('/products', (req, res) => {
+    res.json({ message: 'Here are your products', products: [] });
+});
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
