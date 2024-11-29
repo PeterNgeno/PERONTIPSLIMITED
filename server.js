@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config();
+const quizRoutes = require('./Quiz');
+app.use('/quiz', quizRoutes); // This links /quiz to the router in Quiz.js
 
 const app = express();
 
