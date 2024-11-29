@@ -1,63 +1,38 @@
-const mongoose = require('mongoose');
+const express = require('express');
+const router = express.Router();
 
-// Define the User Schema
-const UserSchema = new mongoose.Schema({
-  username: { 
-    type: String, 
-    required: true, 
-    unique: true 
+// Example in-memory quiz data (You can replace this with MongoDB or a database)
+const quizData = [
+  {
+    question: "What is the capital of Kenya?",
+    options: ["Nairobi", "Mombasa", "Kisumu", "Nakuru"],
+    correctAnswer: "Nairobi"
   },
-  password: { 
-    type: String, 
-    required: true 
+  {
+    question: "What is the largest ocean?",
+    options: ["Atlantic", "Pacific", "Indian", "Arctic"],
+    correctAnswer: "Pacific"
   },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true 
-  },
-  sectionProgress: { 
-    type: Map, 
-    of: Number, 
-    default: {} 
-  }, // Tracks sections completed in the quiz
-  score: { 
-    type: Number, 
-    default: 0 
-  }, // Stores user's total score
-  paymentHistory: { 
-    type: Array, 
-    default: [] 
-  }, // Stores payments made by the user
-  lastPaymentDate: { 
-    type: Date, 
-    default: null 
-  }
+  // Add more questions as needed
+];
+
+// Route to get all quiz questions
+router.get('/', (req, res) => {
+  res.json({ message: 'Quiz page is working!', quizData });
 });
 
-// Create the User Model
-const User = mongoose.model('User', UserSchema);
+// Route to submit quiz answers and calculate score
+router.post('/submit', (req, res) => {
+  const userAnswers = req.body.answers; // Assuming the answers are sent in the body
+  let score = 0;
 
-// Example of creating a user
-async function createUser(username, password, email) {
-  const newUser = new User({ username, password, email });
-  return await newUser.save();
-}
+  quizData.forEach((question, index) => {
+    if (userAnswers[index] === question.correctAnswer) {
+      score++;
+    }
+  });
 
-// Example of updating user's quiz progress after they complete a section
-async function updateUserProgress(userId, section, score) {
-  const user = await User.findById(userId);
-  if (user) {
-    user.sectionProgress.set(section, score);
-    await user.save();
-    return user;
-  } else {
-    throw new Error('User not found');
-  }
-}
+  res.json({ message: 'Quiz submitted successfully', score });
+});
 
-module.exports = {
-  User,
-  createUser,
-  updateUserProgress
-};
+module.exports = router;
