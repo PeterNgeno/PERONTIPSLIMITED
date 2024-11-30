@@ -1,8 +1,7 @@
-// routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User'); // Assuming there's a User model in `models/User.js`
 const bcrypt = require('bcrypt'); // For password hashing
+const { User } = require('../db'); // Import User model from db.js
 
 // POST route for signing up
 router.post('/signup', async (req, res) => {
@@ -10,23 +9,34 @@ router.post('/signup', async (req, res) => {
 
   try {
     // Check if the user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
+    User.findOne(email, (err, existingUser) => {
+      if (err) {
+        console.error('Error checking existing user:', err);
+        return res.status(500).json({ error: 'Error checking user existence' });
+      }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+      if (existingUser) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
 
-    // Create and save the new user
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
+      // Hash the password before saving
+      bcrypt.hash(password, 10, (err, hashedPassword) => {
+        if (err) {
+          console.error('Error hashing password:', err);
+          return res.status(500).json({ error: 'Error hashing password' });
+        }
+
+        // Create and save the new user
+        User.save(username, email, hashedPassword, (err) => {
+          if (err) {
+            console.error('Error saving user:', err);
+            return res.status(500).json({ error: 'Error signing up user' });
+          }
+
+          res.status(201).json({ message: 'User signed up successfully' });
+        });
+      });
     });
-
-    await newUser.save();
-    res.status(201).json({ message: 'User signed up successfully' });
   } catch (error) {
     console.error('Error signing up user:', error);
     res.status(500).json({ error: 'Error signing up user' });
