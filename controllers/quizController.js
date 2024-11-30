@@ -1,5 +1,7 @@
-const Quiz = require('../models/Quiz');
-const User = require('../models/User');
+const sqlite3 = require('sqlite3').verbose();
+
+// Initialize the SQLite database
+const db = new sqlite3.Database('./database.db');
 
 // Start Quiz: Fetch the section's quiz and timer duration based on payment
 exports.startQuiz = async (req, res) => {
@@ -8,15 +10,23 @@ exports.startQuiz = async (req, res) => {
   try {
     const timer = getTimerDuration(payment);
 
-    const quiz = await Quiz.findOne({ section });
-    if (!quiz) {
-      return res.status(404).json({ error: `No quiz found for section ${section}` });
-    }
+    // Fetch quiz from the SQLite database
+    db.get('SELECT * FROM quizzes WHERE section = ?', [section], (err, quiz) => {
+      if (err) {
+        console.error('Error fetching quiz:', err);
+        return res.status(500).json({ error: 'Failed to fetch quiz' });
+      }
 
-    res.json({
-      message: `Starting section ${section} with ${timer} seconds`,
-      quiz: quiz.questions,
-      timer,
+      if (!quiz) {
+        return res.status(404).json({ error: `No quiz found for section ${section}` });
+      }
+
+      const questions = JSON.parse(quiz.questions); // Assuming questions are stored as a JSON string
+      res.json({
+        message: `Starting section ${section} with ${timer} seconds`,
+        quiz: questions,
+        timer,
+      });
     });
   } catch (error) {
     console.error('Error starting quiz:', error);
@@ -30,36 +40,62 @@ exports.submitQuiz = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const quiz = await Quiz.findOne({ section });
-    if (!quiz) {
-      return res.status(404).json({ error: `No quiz found for section ${section}` });
-    }
+    // Fetch quiz from the SQLite database
+    db.get('SELECT * FROM quizzes WHERE section = ?', [section], (err, quiz) => {
+      if (err) {
+        console.error('Error fetching quiz:', err);
+        return res.status(500).json({ error: 'Failed to fetch quiz' });
+      }
 
-    const score = checkAnswers(answers, quiz.questions);
+      if (!quiz) {
+        return res.status(404).json({ error: `No quiz found for section ${section}` });
+      }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+      const score = checkAnswers(answers, JSON.parse(quiz.questions)); // Assuming questions are stored as JSON string
 
-    // Update user's section progress and score
-    user.sectionProgress[section] = score;
-    user.score += score;
-    await user.save();
+      // Fetch user data
+      db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
+        if (err) {
+          console.error('Error fetching user:', err);
+          return res.status(500).json({ error: 'Failed to fetch user' });
+        }
 
-    if (score === quiz.questions.length) {
-      res.json({
-        success: true,
-        message: 'You passed! Proceed to the next section.',
-        score,
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Update user score and section progress
+        const updatedScore = user.score + score;
+        const updatedSectionProgress = JSON.parse(user.sectionProgress);
+        updatedSectionProgress[section] = score;
+
+        // Update the user data in SQLite
+        db.run('UPDATE users SET score = ?, sectionProgress = ? WHERE id = ?', [
+          updatedScore,
+          JSON.stringify(updatedSectionProgress), // Store section progress as a JSON string
+          userId
+        ], (err) => {
+          if (err) {
+            console.error('Error updating user:', err);
+            return res.status(500).json({ error: 'Failed to update user' });
+          }
+
+          if (score === JSON.parse(quiz.questions).length) {
+            res.json({
+              success: true,
+              message: 'You passed! Proceed to the next section.',
+              score,
+            });
+          } else {
+            res.json({
+              success: false,
+              message: 'You failed. Please pay to retry.',
+              score,
+            });
+          }
+        });
       });
-    } else {
-      res.json({
-        success: false,
-        message: 'You failed. Please pay to retry.',
-        score,
-      });
-    }
+    });
   } catch (error) {
     console.error('Error submitting quiz:', error);
     res.status(500).json({ error: 'Failed to submit quiz' });
@@ -93,4 +129,4 @@ function getTimerDuration(payment) {
     default:
       return 30;
   }
-}
+        }
