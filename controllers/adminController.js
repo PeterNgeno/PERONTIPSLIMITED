@@ -1,6 +1,4 @@
-const Quiz = require('../models/Quiz');
-const Product = require('../models/Product');
-const BettingPrediction = require('../models/BettingPrediction');
+const db = require('../db'); // Import the SQLite database connection
 
 // Update Quiz
 exports.updateQuiz = async (req, res) => {
@@ -12,18 +10,19 @@ exports.updateQuiz = async (req, res) => {
       return res.status(400).json({ message: 'Quiz ID, question, and answer are required.' });
     }
 
-    // Update the quiz
-    const quiz = await Quiz.findByIdAndUpdate(
-      quizId,
-      { question, answer },
-      { new: true, runValidators: true } // Return updated document and run validation
-    );
+    // Update the quiz in the database
+    const query = `UPDATE quizzes SET question = ?, answer = ? WHERE id = ?`;
+    db.run(query, [question, answer, quizId], function (err) {
+      if (err) {
+        return res.status(500).json({ message: 'Failed to update quiz.' });
+      }
 
-    if (!quiz) {
-      return res.status(404).json({ message: 'Quiz not found.' });
-    }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Quiz not found.' });
+      }
 
-    res.json(quiz);
+      res.json({ message: 'Quiz updated successfully.' });
+    });
   } catch (error) {
     console.error('Error updating quiz:', error);
     res.status(500).json({ message: 'Failed to update quiz.' });
@@ -40,18 +39,19 @@ exports.updateBettingPrediction = async (req, res) => {
       return res.status(400).json({ message: 'Prediction ID, prediction, and odds are required.' });
     }
 
-    // Update the betting prediction
-    const predictionRecord = await BettingPrediction.findByIdAndUpdate(
-      predictionId,
-      { prediction, odds },
-      { new: true, runValidators: true }
-    );
+    // Update the betting prediction in the database
+    const query = `UPDATE betting_predictions SET prediction = ?, odds = ? WHERE id = ?`;
+    db.run(query, [prediction, odds, predictionId], function (err) {
+      if (err) {
+        return res.status(500).json({ message: 'Failed to update betting prediction.' });
+      }
 
-    if (!predictionRecord) {
-      return res.status(404).json({ message: 'Betting prediction not found.' });
-    }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Betting prediction not found.' });
+      }
 
-    res.json(predictionRecord);
+      res.json({ message: 'Betting prediction updated successfully.' });
+    });
   } catch (error) {
     console.error('Error updating betting prediction:', error);
     res.status(500).json({ message: 'Failed to update betting prediction.' });
@@ -68,18 +68,19 @@ exports.updateProduct = async (req, res) => {
       return res.status(400).json({ message: 'Product ID, name, and price are required.' });
     }
 
-    // Update the product
-    const product = await Product.findByIdAndUpdate(
-      productId,
-      { name, price, imageUrl },
-      { new: true, runValidators: true }
-    );
+    // Update the product in the database
+    const query = `UPDATE products SET name = ?, price = ?, imageUrl = ? WHERE id = ?`;
+    db.run(query, [name, price, imageUrl, productId], function (err) {
+      if (err) {
+        return res.status(500).json({ message: 'Failed to update product.' });
+      }
 
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found.' });
-    }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: 'Product not found.' });
+      }
 
-    res.json(product);
+      res.json({ message: 'Product updated successfully.' });
+    });
   } catch (error) {
     console.error('Error updating product:', error);
     res.status(500).json({ message: 'Failed to update product.' });
