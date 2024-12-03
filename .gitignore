@@ -6,3 +6,6 @@ node_modules/
 
 # Ignore SQLite database file
 database.sql
+
+# Ignore Firebase service account JSON file
+service-account.json
